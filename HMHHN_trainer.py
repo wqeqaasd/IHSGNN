@@ -204,32 +204,11 @@ class HMHHN_trainer(BaseFlow):
         logitskhop = h[:,self.model.emd_dim:]
         logitsgnn = h[:,:self.model.emd_dim]
         logitsgnn, logitskhop = mea(logitsgnn,logitskhop)
-        #logitskhop = mea(logitskhop)
-        #k = F.log_softmax(logitskhop, dim=-1)
+
         soft_loss1 = KLloss(F.log_softmax(logitskhop, dim=-1), F.log_softmax(logits, dim=-1))
         soft_loss2 = KLloss(F.log_softmax(logitsgnn, dim=-1), F.log_softmax(logits, dim=-1))
-            #if torch.isnan(soft_loss3.any()) or torch.isinf(soft_loss3.any()):
-            #    print("矩阵包含 NaN 或 Infinity 值")
-        '''#soft_loss3 = KLloss(F.log_softmax(logitskhop, dim=-1), F.log_softmax(logitsgnn, dim=-1))
-        #soft_loss4 = KLloss(F.log_softmax(logitsgnn, dim=-1), F.log_softmax(logitskhop, dim=-1))
-        #kl1 = torch.exp(soft_loss1 / margin)
-        #kl2 = torch.exp(soft_loss2 / margin)
-        #kl3 = torch.exp(soft_loss3 / margin)
-        #kl4 = torch.exp(soft_loss4 / margin)
-        sim1 = F.cosine_similarity(logitsgnn, logitskhop)
-        sim2 = F.cosine_similarity(logitsgnn, logits)
-        sim3 = F.cosine_similarity(logitskhop, logits)
-        kl1 = torch.exp(sim3 / margin)
-        kl2 = torch.exp(sim2 / margin)
-        kl3 = torch.exp(sim1 / margin)
-        kl4 = kl3'''
-        #k1 = torch.exp(1.0/ (margin*soft_loss1))
-        #k2 = torch.exp(1.0/ (margin*soft_loss2))
-        #self.k1 = float(k1 / (k1 + k2))
-        #self.k2 = float(k2 / (k1 + k2))
-        #k=torch.sum(- torch.log(kl3/(kl3+kl1))-torch.log(kl4/(kl4+kl2)))
-        return 1.0*soft_loss1#-0.5*soft_loss2#+0.002*torch.sum(- torch.log(kl3/(kl3+kl1))-torch.log(kl4/(kl4+kl2)))
-        #return soft_loss1-0.5*soft_loss2
+
+        return 1.0*soft_loss1
     def recon_loss(self, h,margin=1.0):
         h1 = h[:,self.model.emd_dim:]
         h = h1.reshape(h1.size(0)*(self.model.gnn_layer-1),self.model.emd_dim)
@@ -241,11 +220,7 @@ class HMHHN_trainer(BaseFlow):
         similarity_matrix1 = F.cosine_similarity(h, H, dim=2)
         sum_exp_sim_over_tau = torch.sum(similarity_matrix , dim=1)
         loss = torch.sum(sum_exp_sim_over_tau - 2*similarity_matrix1)
-        # 对比学习损失
-        #exp_sim_over_tau = torch.exp(similarity_matrix / margin)
-        #sum_exp_sim_over_tau = torch.sum(exp_sim_over_tau, dim=1)
-        #loss = torch.mean(torch.log(sum_exp_sim_over_tau) - similarity_matrix.diagonal())
-        #loss = torch.mean(torch.log(sum_exp_sim_over_tau) - similarity_matrix.diagonal())
+
         return loss
 
 
@@ -264,15 +239,14 @@ class HMHHN_trainer(BaseFlow):
         label = torch.stack(label)
         label=label[blocks[-1].dstdata["_ID"]]
         return label
-    # 训练 MyGraphSAGE 模型，结合标签传播和自蒸馏
+
     def _mini_train_step(self, epoch, self_distillation_start_epoch=10):
         self.model.train()
         self.optimizer.zero_grad()
         self.hg = self.hg.to(self.device)
         loss_all = 0.0
         loader_tqdm = tqdm(self.train_loader, ncols=120)
-        #for input_nodes, output_nodes, blocks in self.t_loader:
-        #    print(input_nodes)
+
         h = self.hg.ndata['h']
 
         for l, (input_nodes, output_nodes, blocks) in enumerate(loader_tqdm):
@@ -280,8 +254,7 @@ class HMHHN_trainer(BaseFlow):
             logits = self.model(self.hg,blocks, h_dict,self.category)[self.category]
             labels = self.task.labels[output_nodes.to("cpu")]
             labels = labels.to(self.device)
-            #labels = torch.unsqueeze(torch.Tensor([1.0, 0, 0, 0]), 0).expand(self.train_idx.size(0), -1)#self.generateLabel(h, blocks)
-            # Self-distillation: 使用模型自身生成的标签进行标签传播
+
             if epoch >= self_distillation_start_epoch:
                 g_sample, inverse_indices = dgl.khop_in_subgraph(self.hg,
                                                                  {self.category: self.train_idx.to(self.device)},
@@ -297,7 +270,7 @@ class HMHHN_trainer(BaseFlow):
             loss.backward()
             self.optimizer.step()
             loss_all+=loss.item()
-        #print(f"Epoch {epoch + 1}/{self.max_epoch}, Loss: {loss_all}")
+
         self.model.eval()
         logits = self.model(self.hg, self.g, h_dict, test=True)
         logitsval = logits[self.category][self.valid_idx]
@@ -392,7 +365,7 @@ class HMHHN_trainer(BaseFlow):
             return metric, f1_dict
 
     def Orthogonalization(self, embeddings):
-        # 计算正交化损失
+
         loss = 0
         len = int(embeddings.size(1)/self.model.emd_dim)
         for i in range(embeddings.size(0)):
@@ -401,13 +374,13 @@ class HMHHN_trainer(BaseFlow):
                 print("矩阵包含 NaN 或 Infinity 值")
             frobenius_norm_sq = torch.mm(k, k.t())
             frobenius_norm_sq = torch.nn.functional.normalize(frobenius_norm_sq - torch.eye(len, device=self.device),p=2)
-            #frobenius_norm_sq = frobenius_norm_sq/embeddings.size(2) #embeddings.size(2)
+
             loss += torch.sum(frobenius_norm_sq ** 2)
         # 返回带有权重的损失
         return loss/embeddings.size(0)
 
     def disen_loss(self, embeddings):
-        # 计算正交化损失
+
         embeddings = embeddings[:, self.model.emd_dim:]
         embeddings = embeddings.view(embeddings.size(0),self.model.gnn_layer - 1, self.model.emd_dim)
         loss = 0
@@ -416,7 +389,7 @@ class HMHHN_trainer(BaseFlow):
             if torch.all(k == 0):
                 continue
             pearson_corr = torch.corrcoef(k) - torch.eye(embeddings.size(1)).to(self.device)
-            # 计算Pearson相关系数
+
             loss += torch.sum(0.5*pearson_corr)
         return 0.0001*loss
     def update_S(self, hkhop):
