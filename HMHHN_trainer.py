@@ -170,8 +170,6 @@ class HMHHN_trainer(BaseFlow):
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-                print(self._test_step(aggr=False,modes=["valid"]))
-                #print(f"Epoch {epoch + 1}/{self.max_epoch}, Loss: {loss_all}")
                 self.model.eval()
                 with th.no_grad():
                     hgnn, hstack = self.model(self.hg, self.g, h_dict, test=True)
