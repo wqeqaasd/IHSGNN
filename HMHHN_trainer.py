@@ -52,26 +52,26 @@ class HMHHN_trainer(BaseFlow):
             if self.train_idx is not None:
                 self.train_loader = dgl.dataloading.DataLoader(
                                         self.g,self.train_idx.to(self.device), sampler,
-                                        batch_size=self.args.batch_size,  # 设置batch_size
+                                        batch_size=self.args.batch_size, 
                                         device=self.device, shuffle=True
                                     )
             #torch.cat((self.train_idx,self.valid_idx),axis=-1).to(self.device)
             if self.valid_idx is not None:
                 self.val_loader = dgl.dataloading.DataLoader(
                     self.g, self.valid_idx.to(self.device), sampler,
-                    batch_size=self.args.batch_size,  # 设置batch_size
+                    batch_size=self.args.batch_size, 
                     device=self.device, shuffle=True
                 )
             if self.args.test_flag:
                 self.test_loader = dgl.dataloading.DataLoader(
                     self.g,  self.test_idx.to(self.device), sampler,
-                    batch_size=self.args.batch_size,  # 设置batch_size
+                    batch_size=self.args.batch_size,  
                     device=self.device, shuffle=True
                 )
             if self.args.prediction_flag:
                 self.pred_loader = dgl.dataloading.DataLoader(
                     self.g, self.pred_idx.to(self.device), sampler,
-                    batch_size=self.args.batch_size,  # 设置batch_size
+                    batch_size=self.args.batch_size,  
                     device=self.device, shuffle=True
                 )
     def preprocess(self):
@@ -170,8 +170,6 @@ class HMHHN_trainer(BaseFlow):
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-                print(self._test_step(aggr=False,modes=["valid"]))
-                #print(f"Epoch {epoch + 1}/{self.max_epoch}, Loss: {loss_all}")
                 self.model.eval()
                 with th.no_grad():
                     hgnn, hstack = self.model(self.hg, self.g, h_dict, test=True)
@@ -200,13 +198,13 @@ class HMHHN_trainer(BaseFlow):
         return total_loss
 
     def distillation_loss(self, h,logits,mea,labels,margin=0.4):
-        # 先执行分布评估，再使用KL散度评估分布差异
+  
         logitskhop = h[:,self.model.emd_dim:]
         logitsgnn = h[:,:self.model.emd_dim]
         logitsgnn, logitskhop = mea(logitsgnn,logitskhop)
 
         soft_loss1 = KLloss(F.log_softmax(logitskhop, dim=-1), F.log_softmax(logits, dim=-1))
-        soft_loss2 = KLloss(F.log_softmax(logitsgnn, dim=-1), F.log_softmax(logits, dim=-1))
+        #soft_loss2 = KLloss(F.log_softmax(logitsgnn, dim=-1), F.log_softmax(logits, dim=-1))
 
         return 1.0*soft_loss1
     def recon_loss(self, h,margin=1.0):
@@ -332,10 +330,10 @@ class HMHHN_trainer(BaseFlow):
                 index_sequences = [line[3] for line in lines]
                 max_index = max(max(map(int, sequence.split(","))) for sequence in index_sequences)
 
-                # 初始化结果列表
+     
                 result_lists = []
 
-                # 将索引序列转换为对应下标为1的序列列表
+         
                 for sequence in index_sequences:
                     indices = list(map(int, sequence.split(",")))
                     result = [1 if i in indices else 0 for i in range(max_index + 1)]
@@ -371,12 +369,12 @@ class HMHHN_trainer(BaseFlow):
         for i in range(embeddings.size(0)):
             k=embeddings[i,:].view(len,self.model.emd_dim)
             if torch.isnan(k.any()) or torch.isinf(k.any()):
-                print("矩阵包含 NaN 或 Infinity 值")
+                print("NaN or Infinity")
             frobenius_norm_sq = torch.mm(k, k.t())
             frobenius_norm_sq = torch.nn.functional.normalize(frobenius_norm_sq - torch.eye(len, device=self.device),p=2)
 
             loss += torch.sum(frobenius_norm_sq ** 2)
-        # 返回带有权重的损失
+      
         return loss/embeddings.size(0)
 
     def disen_loss(self, embeddings):
