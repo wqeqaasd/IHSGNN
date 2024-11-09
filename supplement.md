@@ -15,7 +15,7 @@
 | IHSGNN    | Macro-F1   | 92.73 ± 0.35        | 64.93 ± 0.65       | 92.78 ± 0.32       | 24.35             |
 | (no ST)   | Micro-F1   | 93.19 ± 0.30        | 67.65 ± 0.60       | 92.75 ± 0.35       |                   |
 
-Thank you for reviewing our additional experiments. We reproduced SlotGAT, SeHGNN, and HiNormer using their source code in a local environment. 
+Thank you for reviewing our additional experiments. We reproduced SlotGAT, SeHGNN, and HiNormer using their source code and best set in a local environment. 
 The experimental results showed that, aside from SlotGAT demonstrating a clear advantage on the ACM dataset (at a significant time cost), 
 IHSGNN maintains a performance advantage on both the DBLP and IMDB datasets. Unfortunately, most results fall within the variance range, 
 consistent with the findings of [1]. Therefore, we included the per-epoch training time on DBLP to further validate our contribution.
