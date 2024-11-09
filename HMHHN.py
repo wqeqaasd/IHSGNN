@@ -103,15 +103,6 @@ class HMHHN(BaseModel):
         self.sampler = dgl.dataloading.MultiLayerFullNeighborSampler(4)
         self.layers = torch.nn.ModuleList()
         self.projlayers = torch.nn.ModuleList()
-        self.reducelayers = torch.nn.ModuleList()
-        self.reducelayers.append(
-            Linear(self.emd_dim + 4, self.emd_dim, act=torch.nn.Tanh(), dropout=0.5, has_l2norm=False))
-        self.reducelayers.append(
-            Linear(self.emd_dim + 6, self.emd_dim, act=torch.nn.Tanh(), dropout=0.5, has_l2norm=False))
-        self.reducelayers.append(
-            Linear(self.emd_dim + 8, self.emd_dim, act=torch.nn.Tanh(), dropout=0.5, has_l2norm=False))
-        self.reducelayers.append(
-            Linear(self.emd_dim + 10, self.emd_dim, act=torch.nn.Tanh(), dropout=0.5, has_l2norm=False))
         self.projlayers.append(
             Linear(self.project_dim, self.emd_dim-4, act=torch.nn.Tanh(), dropout=0.5, has_l2norm=False, has_bn=True))
         self.projlayers.append(
@@ -164,9 +155,7 @@ class HMHHN(BaseModel):
         for layer in range(g.number_of_layers()):
             neighbors = list(g.successors(seeds))
             if neighbors:
-                # 将标签按顺序传播
                 for neighbor in neighbors:
-                    # 执行标签线性组合
                     g.ndata['label'][neighbor] = F.cat([g.ndata['label'][neighbor], labels])
 
     def combine_message(self, edges):
@@ -226,7 +215,7 @@ class HMHHN(BaseModel):
                         g_khop = dgl.khop_graph(g_adj0, k+1)
 
                         g_khop = dgl.out_subgraph(g_khop, output_nodes, relabel_nodes=False, store_ids=False).to(self.device)
-                        degrees = g_khop.in_degrees()  # 或者使用 g.out_degrees()，根据图的性质选择
+                        degrees = g_khop.in_degrees() 
                         non_zero_degree_nodes = torch.nonzero(degrees).squeeze()
                         g_khop = dgl.add_reverse_edges(g_khop, readonly=None, copy_ndata=False, copy_edata=False,
                                                        ignore_bipartite=False, exclude_self=True)
