@@ -39,4 +39,5 @@ The results demonstrate that the LSP module plays a critical role in performance
 If you have any questions about the results of the new baseline, please provide the corresponding issues for further discussion. Thank you.
 
 [1] Zhao, T., Yang, C., "Space4hgnn: A novel, modularized and reproducible platform to evaluate heterogeneous graph neural network." In SIGIR '22, pp. 2776–2789, 2022.
+
 [2] Lv, Q., Ding, M., "Are we really making much progress?: Revisiting, benchmarking and refining heterogeneous graph neural networks." In KDD '21, pp. 1150–1160, 2021.
